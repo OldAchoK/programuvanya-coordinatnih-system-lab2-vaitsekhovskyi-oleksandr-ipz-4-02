@@ -233,19 +233,28 @@ ws.onmessage = on_message
 ## 8. Інструкції для запуску
 
 ### Desktop версія:
-1. Запустити контейнер
+1. Скачати контейнер
+<img src='./imgs/setup-conteiner.png'/>
+2. Запустити контейнер
 <img src='./imgs/run-conteiner.png'/>
-2. Встановлення залежностей та запуск сервера
+3. Встановлення залежностей та запуск сервера
 ```bash
 pip install -r requirements.txt
 python radar_desktop.py
 ```
+<img src='./imgs/run-conteiner.png'/>
+4. Вид десктоп радару:
+<img src='./imgs/radar_desktop.png'/>
 
 ### Web версія:
-1. Запустити контейнер
-2. Запустити сервера
-  
+1. Скачати контейнер
+<img src='./imgs/setup-conteiner.png'/>
+2. Запустити контейнер
+<img src='./imgs/run-conteiner.png'/>
+3. Запустити сервера
 <img src='./imgs/startup_of_web.png'/>
+4. Вид веб радару:
+<img src='./imgs/web-radar.png'/>
 
 ---
 
