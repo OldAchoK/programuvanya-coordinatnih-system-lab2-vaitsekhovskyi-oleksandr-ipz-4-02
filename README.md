@@ -234,7 +234,7 @@ ws.onmessage = on_message
 
 ### Desktop версія:
 1. Скачати контейнер
-<img src='./imgs/setup-conteiner.png'/>
+<img src='./imgs/setup_conteiner_pull.png'/>
 2. Запустити контейнер
 <img src='./imgs/run-conteiner.png'/>
 3. Встановлення залежностей та запуск сервера
@@ -248,7 +248,7 @@ python radar_desktop.py
 
 ### Web версія:
 1. Скачати контейнер
-<img src='./imgs/setup-conteiner.png'/>
+<img src='./imgs/setup_conteiner_pull.png'/>
 2. Запустити контейнер
 <img src='./imgs/run-conteiner.png'/>
 3. Запустити сервера
