@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Radar Interface</title>
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
+    <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #ffffff;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 600px 320px;
+            gap: 40px;
+            padding: 20px;
+            align-items: start;
+        }
+        #radar-container {
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            position: relative;
+            width: 600px;
+            height: 600px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+        canvas { position: absolute; top: 0; left: 0; border-radius: 8px; }
+        .controls {
+            background: #f9f9f9;
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid #eee;
+        }
+        .input-group { margin-bottom: 12px; }
+        label {
+            display: block;
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            background: #fff;
+            border: 1px solid #ddd;
+            color: #333;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        input:focus { border-color: #007bff; outline: none; }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 15px;
+            transition: background 0.2s;
+        }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div id="radar-container">
+            <canvas id="gridCanvas" width="600" height="600"></canvas>
+            <canvas id="radarCanvas" width="600" height="600"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="input-group"><label>Measurements / Rotation</label><input id="measurementsPerRotation" type="number" value="360"></div>
+            <div class="input-group"><label>Rotation Speed (RPM)</label><input id="rotationSpeed" type="number" value="60"></div>
+            <div class="input-group"><label>Beam Width (deg)</label><input id="beamWidth" type="number" value="1"></div>
+            <div class="input-group"><label>Pulse Duration</label><input id="pulseDuration" type="number" value="1"></div>
+            <div class="input-group"><label>Sensitivity (dBm)</label><input id="sensitivity" type="number" value="-120"></div>
+            <div class="input-group"><label>Number of Targets</label><input id="numberOfTargets" type="number" value="1"></div>
+            <div class="input-group"><label>Target Speed (km/h)</label><input id="targetSpeed" type="number" value="500"></div>
+            <div class="input-group"><label>Zone Size (km)</label><input id="emulationZoneSize" type="number" value="200"></div>
+            <div class="input-group"><label>Transmit Power</label><input id="transmitPower" type="number" value="1"></div>
+            <div class="input-group"><label>Antenna Gain</label><input id="antennaGain" type="number" value="33"></div>
+
+            <button id="update-btn" py-click="update_config">ОНОВИТИ ПАРАМЕТРИ</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('radarCanvas');
+        const ctx = canvas.getContext('2d');
+        const gridCanvas = document.getElementById('gridCanvas');
+        const gridCtx = gridCanvas.getContext('2d');
+        const centerX = 300;
+        const centerY = 300;
+
+        function drawGrid() {
+            const zoneSize = parseFloat(document.getElementById('emulationZoneSize').value);
+            gridCtx.clearRect(0, 0, 600, 600);
+            gridCtx.strokeStyle = '#e0e0e0';
+            gridCtx.lineWidth = 1;
+            gridCtx.font = "10px sans-serif";
+            gridCtx.fillStyle = "#999";
+
+            for (let i = 1; i <= 4; i++) {
+                gridCtx.beginPath();
+                gridCtx.arc(centerX, centerY, (i * 60), 0, Math.PI * 2);
+                gridCtx.stroke();
+                gridCtx.fillText(`${Math.round((zoneSize/4)*i)} km`, centerX + 5, centerY - (i * 60) - 5);
+            }
+
+            for (let i = 0; i < 360; i += 45) {
+                let rad = (i - 90) * Math.PI / 180;
+                gridCtx.beginPath();
+                gridCtx.moveTo(centerX, centerY);
+                gridCtx.lineTo(centerX + 300 * Math.cos(rad), centerY + 300 * Math.sin(rad));
+                gridCtx.stroke();
+            }
+        }
+
+        function drawTarget(angleDeg, distance) {
+            ctx.clearRect(0, 0, 600, 600);
+
+            const zoneSize = parseFloat(document.getElementById('emulationZoneSize').value);
+            const r = (distance / zoneSize) * 300;
+            const theta = (angleDeg - 90) * Math.PI / 180;
+
+            const x = centerX + r * Math.cos(theta);
+            const y = centerY + r * Math.sin(theta);
+
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, Math.PI * 2);
+            ctx.fillStyle = '#ff4d4d';
+            ctx.fill();
+
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+
+        window.onload = drawGrid;
+    </script>
+
+    <script type="py">
+        import json
+        import asyncio
+        from js import document, WebSocket, console, drawTarget, drawGrid
+        from pyodide.http import pyfetch
+
+        async def update_config(event):
+            url = "http://localhost:4000/config"
+            try:
+                drawGrid() # Перемалювати сітку під новий масштаб
+                payload = {
+                    "measurementsPerRotation": int(document.getElementById("measurementsPerRotation").value),
+                    "rotationSpeed": int(document.getElementById("rotationSpeed").value),
+                    "beamWidth": float(document.getElementById("beamWidth").value),
+                    "pulseDuration": float(document.getElementById("pulseDuration").value),
+                    "sensitivity": float(document.getElementById("sensitivity").value),
+                    "numberOfTargets": int(document.getElementById("numberOfTargets").value),
+                    "targetSpeed": int(document.getElementById("targetSpeed").value),
+                    "emulationZoneSize": int(document.getElementById("emulationZoneSize").value),
+                    "transmitPower": float(document.getElementById("transmitPower").value),
+                    "antennaGain": float(document.getElementById("antennaGain").value)
+                }
+                await pyfetch(url, method="PUT", body=json.dumps(payload), headers={"Content-Type": "application/json"})
+            except Exception as e:
+                console.log(f"Config error: {e}")
+
+        def on_message(event):
+            try:
+                data = json.loads(event.data)
+                echoes = data.get('echoResponses', [])
+                if echoes:
+                    for echo in echoes:
+                        # Відстань: $d = \frac{c \cdot t}{2}$
+                        dist = (300000 * float(echo['time'])) / 2
+                        drawTarget(float(data['scanAngle']), dist)
+            except Exception:
+                pass
+
+        ws = WebSocket.new("ws://localhost:4000")
+        ws.onmessage = on_message
+    </script>
+</body>
+</html>
