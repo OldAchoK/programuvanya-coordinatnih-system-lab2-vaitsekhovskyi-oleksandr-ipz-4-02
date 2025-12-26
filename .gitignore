@@ -1,0 +1,4 @@
+# created by virtualenv automatically
+.venv/
+venv_l2/
+.idea/
